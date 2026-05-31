@@ -53,16 +53,39 @@ For each module, ask these in order (one question per message):
 2. **Type** — "Is `{name}` a backend service, frontend app, or something else?
    _(backend / frontend / worker / gateway)_"
 3. **Stack** — "What's the tech stack for `{name}`? (e.g. `Spring Boot 3, Java 21` or `React, TypeScript`)"
-4. **Port** — "What port does `{name}` run on locally?"
-5. **Repo URL** — "What's the git repo URL for `{name}`?
+4. **Repo URL** — "What's the git repo URL for `{name}`?
    _(Skip with 'none' if not set up yet)_"
-6. **Description** — "One sentence: what does `{name}` do?
-   _(Skip with 'none')_"
+5. **Submodules** — scan the user's answers so far for signals: words like "monorepo", "multi-module",
+   "Gradle modules", a comma-separated list of app names, etc.
+   **If signals present**, ask:
+   > "It sounds like `{name}` contains multiple submodules ({detected names if any}).
+   > Should I configure them separately? (yes / no)"
+   **If yes** → collect submodules one at a time (see below). Skip step 6 — port belongs to each submodule, not the parent.
+   **If no or no signals** → continue to step 6.
+6. **Port** _(skip when module has submodules)_ — "What port does `{name}` run on locally?"
+7. **Description** — "One sentence: what does `{name}` do? _(Skip with 'none')_"
 
-After collecting all fields for a module, confirm it back:
+**Submodule collection** (repeat for each):
+- "Submodule name? (kebab-case)"
+- "Type? (backend / frontend / worker)"
+- "Stack?"
+- "Port?"
+- "Path within the `{name}` repo? (e.g. `apps/admin` or `auth-ui`)"
+- "One sentence: what does it do? _(Skip with 'none')_"
+
+Confirm each: "`{sub}` — {type} — {stack} — :{port} — path: {path}. Another submodule? (yes / no)"
+
+> **Rules for submodules:**
+> - No `repo` field — submodules share the parent module's repo
+> - No `port` on the parent module — port belongs to each submodule
+> - `type` and `stack` are per-submodule (may differ from the parent)
+
+After collecting all submodules (or just module fields), confirm:
 
 > "Got it:
-> `{name}` — {type} — {stack} — :{port} — {repo or 'no repo yet'}
+> `{name}` — {type} — {repo or 'no repo yet'}
+> {if no submodules: stack + port}
+> {if submodules: list each as `  ↳ {sub} — {type} — {stack} — :{port} — {path}`}
 > {description}
 > Is that right?"
 
@@ -112,7 +135,7 @@ CLAUDE.md
   Conventions: {list or "none yet"}
   Out of scope: {list or "none yet"}
 
-features/.gitkeep
+features/CHANGELOG.md
 contracts/.gitkeep
 .gitignore  ← append Forge entries
 ```
@@ -126,6 +149,8 @@ Wait for confirmation. Do not write anything before the user says yes.
 ## Phase 5 — Write files
 
 Write `.forge/project.json`:
+
+Module **without** submodules — `port` and `stack` on the module itself:
 ```json
 {
   "project": "{project-name}",
@@ -146,6 +171,35 @@ Write `.forge/project.json`:
 }
 ```
 
+Module **with** submodules — no `port` on the module; each submodule owns its `port`, `stack`,
+`type`, and `path`; no `repo` on submodules (they share the parent's repo):
+```json
+{
+  "project": "{project-name}",
+  "version": "1.0",
+  "modules": [
+    {
+      "name": "{module-name}",
+      "repo": "{repo-url}",
+      "description": "{description}",
+      "submodules": [
+        {
+          "name": "{sub-name}",
+          "type": "backend|frontend|worker",
+          "stack": ["{stack}"],
+          "port": {port},
+          "path": "{relative-path-in-repo}",
+          "description": "{description}"
+        }
+      ]
+    }
+  ],
+  "spec_repo": "{spec-repo-url}",
+  "contract_format": "openapi3",
+  "contract_tool": "specmatic"
+}
+```
+
 Write `CLAUDE.md`:
 ```markdown
 # {project-name}
@@ -156,6 +210,14 @@ Write `CLAUDE.md`:
 | Name | Type | Stack | Port |
 |------|------|-------|------|
 | {name} | {type} | {stack} | {port} |
+
+_(For modules with submodules, expand the table with one row per submodule.
+Indent the submodule name with `↳` and omit port/stack from the parent row.)_
+
+| Name | Type | Stack | Port | Path |
+|------|------|-------|------|------|
+| {module} | — | — | — | — |
+| ↳ {sub} | {type} | {stack} | {port} | {path} |
 
 ## Forge Workflow
 1. `/forge-brainstorm` — explore and define a feature
@@ -182,8 +244,18 @@ Utilities: `/forge-status` (feature dashboard) · `/forge-config` (edit modules/
 - `contracts/{module}/{slug}.yaml` + `schemas/` + `shared/` — Specmatic OpenAPI 3.0 contracts
 ```
 
+Create `features/CHANGELOG.md`:
+```markdown
+# Feature Changelog
+
+Ordered list of all features. Add entries via `/forge-brainstorm`; update via `/forge-spec`,
+`/forge-contract`, and `/forge-close`. Use `Depends on` to declare what must ship first.
+
+| # | Slug | Description | Status | Modules | Depends on |
+|---|------|-------------|--------|---------|------------|
+```
+
 Create:
-- `features/.gitkeep`
 - `contracts/.gitkeep`
 
 Append to `.gitignore` if not present:
@@ -202,4 +274,8 @@ Run `git status` and confirm:
 - Never write files before the user says yes in Phase 4
 - Never overwrite existing files
 - All written files must be complete — no unfilled placeholders
+- **Extract, don't re-ask**: if the user's answer contains information for upcoming fields
+  (e.g. "user-service, Spring Boot 3, port 8080, backend"), extract and fill those fields
+  silently — only ask about what is genuinely missing. Never ask a question the user has
+  already answered, even indirectly.
 - If the user provides multiple answers in one message, accept them gracefully and move forward

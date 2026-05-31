@@ -270,9 +270,16 @@ Cross-module data: {what is shared with or derived from other modules — or "No
 
 ---
 
-## Step 7 — Gate
+## Step 7 — Update changelog & gate
 
-After writing, say:
+After writing `spec.md`, update `features/CHANGELOG.md`:
+- Find the row where `Slug` = `{slug}`
+- Update `Status` → `Draft`
+- Update `Modules` → comma-separated list of modules from the spec's **Modules** header
+- If the row doesn't exist (spec written without going through forge-brainstorm), append it:
+  `| — | {slug} | {overview first sentence} | Draft | {modules} | — |`
+
+Then say:
 > "Spec written to `features/{slug}/spec.md`. Review it and say **yes** to generate the task breakdown."
 
 Do NOT add tasks to spec.md — tasks go in `features/{slug}/tasks.md` via `/forge-tasks`.

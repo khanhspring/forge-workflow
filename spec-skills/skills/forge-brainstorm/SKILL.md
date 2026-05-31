@@ -18,11 +18,37 @@ every unknown either resolved or explicitly accepted as an assumption.
 
 <HARD-GATE>
 Do NOT generate a spec, break down tasks, or write any contracts in this phase.
-The ONLY file this skill writes is `features/{slug}/brainstorm.md`, and only AFTER
-the user has explicitly approved the Brainstorm Summary at the gate (Step 7).
+The only files this skill writes are `features/{slug}/brainstorm.md` and one row in
+`features/CHANGELOG.md`, and only AFTER the user has explicitly approved the Brainstorm
+Summary at the gate (Step 7).
 "Simple" features are where unexamined assumptions cause the most wasted work — no feature
 skips this phase.
 </HARD-GATE>
+
+---
+
+## Step 0 — Check for existing external context
+
+Before anything else, check if the user has provided external content to work from.
+Signals: they paste a block of text, mention "we have a Confluence page / Google Doc / proposal /
+PRD / design doc", or say "here's the draft".
+
+**If external content is present (pasted inline):**
+Extract everything you can from it — map it to the mandatory question areas in Step 2.
+Note what is covered, what is missing, and what is ambiguous.
+Report back:
+> "I've read your {doc type}. Here's what I extracted:
+> ✅ Covered: {list of areas — problem, actors, happy path, etc.}
+> ❓ Missing or unclear: {list of gaps}
+> ⚠️ Ambiguous: {anything that could be read two ways}
+>
+> I'll ask only about the gaps. Sound good?"
+
+**If the user mentions a doc but hasn't pasted it:**
+> "I can't access external URLs directly — could you paste the relevant content here?
+> Even a rough copy-paste is fine; I'll extract what I need."
+
+**If no external content** — proceed straight to Step 1.
 
 ---
 
@@ -57,7 +83,8 @@ Then check scope:
 ## Step 2 — Mandatory questions (one at a time)
 
 These MUST all be answered before moving to Step 4. Ask one at a time.
-Skip any sub-question already answered by your research in Step 1.
+**Skip any area already covered by Step 0 extraction or Step 1 research.**
+Only ask about genuine gaps — never re-ask what the user already provided.
 
 **If a question hits an unknown** — something the user can't answer without researching —
 use the Research Flag pattern (see Research Handling below).
@@ -302,8 +329,17 @@ If (b), convert each item to an explicit assumption in the summary.
 
 ## Step 8 — Persist the summary (after approval only)
 
-Once the user says **yes**, write the approved summary to `features/{slug}/brainstorm.md`
-so it survives across sessions and forge-spec can pick it up later.
+Once the user says **yes**:
+
+**8a — Assign sequence number and ask about dependencies**
+
+Read `features/CHANGELOG.md`. Count existing rows to get the next `#`.
+
+Ask (one message):
+> "Does this feature depend on any other feature being shipped first?
+> _(Enter slugs like `user-registration`, or 'none')_"
+
+**8b — Write `features/{slug}/brainstorm.md`**
 
 ```markdown
 # Brainstorm: {Feature Name}
@@ -315,18 +351,26 @@ so it survives across sessions and forge-spec can pick it up later.
 {the full Brainstorm Summary body from Step 6 — all sections}
 ```
 
+**8c — Append row to `features/CHANGELOG.md`**
+
+Add a new row — status `Brainstormed`, modules left blank until forge-spec fills them:
+```
+| {n} | {slug} | {one-line from Problem section} | Brainstormed | — | {depends or —} |
+```
+
 Then hand off:
-> "Saved to `features/{slug}/brainstorm.md`. Run `/forge-spec {slug}` to write the spec."
+> "Saved to `features/{slug}/brainstorm.md` and added to the changelog as #{n}.
+> Run `/forge-spec {slug}` to write the spec."
 
 ---
 
 ## Rules
 - One question per message — never list multiple at once
 - Prefer multiple-choice when options are predictable
-- Never skip Step 2 mandatory areas — even for "simple" features
-- Never skip the challenge round (Step 4)
-- Never skip the approaches step (Step 5)
+- Cover all Step 2 mandatory areas — but fill from Step 0 extraction first; only ask for genuine gaps
+- Never skip the challenge round (Step 4) — even when a doc covers everything, challenge it
+- Never skip the approaches step (Step 5) — a doc may have a chosen approach but alternatives should still be surfaced
 - YAGNI: move anything non-core to Out of Scope
 - The ONLY file written is `features/{slug}/brainstorm.md`, and only after approval (Step 8)
 - Do NOT skip Step 1 research — always check existing context first
-- Do NOT ask questions that could be answered by reading the existing codebase
+- Do NOT ask questions that could be answered by reading the existing codebase or the pasted doc

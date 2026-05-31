@@ -25,10 +25,15 @@ presented the Implementation Plan and the user has explicitly confirmed it.
 ## Pre-check
 
 - Read `.forge/module.json` — if missing, say "Run `/forge-init` to set up this module repo first."
-- Get `module`, `spec_submodule_path`, `test_base_url`, `contract_glob` from module.json.
+- Get `spec_submodule_path` from module.json.
+- **Determine working scope:**
+  - `module.json` has no `submodules` → scope = the module itself; use top-level `test_base_url` and `contract_glob`.
+  - `module.json` has `submodules[]` → ask "Which submodule are you implementing? ({list submodule names})"
+    then use that submodule's `path`, `test_base_url`, and `contract_glob`.
 - Feature slug from $ARGUMENTS.
-  - If empty, scan `{spec_submodule_path}/features/*/tasks.md` for `### {module}` sections,
-    list features with pending tasks, ask which to implement.
+  - If empty, scan `{spec_submodule_path}/features/*/tasks.md` for `### {scope-name}` headings
+    (module name for simple modules, submodule name for submodules), list features with pending
+    tasks, ask which to implement.
 - Check `git submodule status` — if specs/ is out of date, say:
   > "Your specs submodule may be out of date. Run `git submodule update --remote specs` first, or continue with the current version?"
 
@@ -42,14 +47,15 @@ Load the feature documents silently:
 
 If `tasks.md` is missing → stop: "No tasks found. Run `/forge-tasks {slug}` in the spec repo first."
 
-**Determine which contract(s) apply to this module:**
-- Look for an own-module contract: `{spec_submodule_path}/contracts/{module}/{slug}.yaml`.
-- **If it exists** → this module *provides* the API. Use it as the source of truth for the
-  endpoints you implement.
-- **If it does NOT exist** (typical for frontend/consumer modules) → scan
+**Determine which contract(s) apply to this scope:**
+- The contract path is always `{spec_submodule_path}/contracts/{scope-name}/{slug}.yaml` where
+  `{scope-name}` is the module name (for simple modules) or the submodule name (for submodules).
+  Submodules use their own name — no parent prefix — so the path is identical to a standalone module.
+- **If the contract exists** → this scope *provides* the API. Use it as the source of truth.
+- **If it does NOT exist** (typical for frontend/consumer scopes) → scan
   `{spec_submodule_path}/contracts/*/{slug}.yaml` for sibling contracts. These are the APIs
-  this module *consumes*. Report:
-  > "No contract for `{module}` — this module consumes APIs from: {list backend modules}.
+  this scope *consumes*. Report:
+  > "No contract for `{scope-name}` — consuming APIs from: {list providers}.
   > I'll use their contracts as the integration source of truth."
 - If no contract exists anywhere for this feature → note it and continue with spec + tasks only.
 
@@ -178,7 +184,7 @@ Wait for the answer before continuing.
 - When **consuming** an API (frontend/client): send requests and parse responses exactly as the
   consumed contract defines — treat its shapes as fixed, code defensively against its error responses
 - If the contract looks wrong: "This looks like a contract issue — raise a PR in the spec repo"
-- Only implement tasks under `### {module}` in tasks.md — flag any cross-module work
+- Only implement tasks under `### {scope-name}` in tasks.md (module name or submodule name) — flag any cross-scope work
 - Follow existing codebase patterns found in Step 1 — consistency over personal preference
 - No code before the user confirms the plan in Step 4
 

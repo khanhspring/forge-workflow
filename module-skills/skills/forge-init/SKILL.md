@@ -19,9 +19,9 @@ disable-model-invocation: false
 
 # Forge Init — Module Repo
 
-Initialize this repo as a Forge module repo (one module — backend or frontend).
-Research what's already in the codebase first, then ask one question at a time —
-pre-filling anything already detectable. Write all files in one go after confirmation.
+Initialize this repo as a Forge module repo. It may contain one module (a dedicated service or
+app) or multiple modules sharing the same repo to reduce overhead (a monorepo). Either way,
+research first, then ask one question at a time before writing anything.
 
 ## Pre-check
 If `.forge/module.json` already exists → say "Module repo already initialized." and stop.
@@ -34,9 +34,13 @@ Before asking anything, silently scan the repo and note:
 
 1. **Stack detection** — does `pom.xml`, `build.gradle`, `package.json`, `go.mod`, `requirements.txt`, or similar exist? What versions are declared?
 2. **Port detection** — is a port configured in `application.yml`, `application.properties`, `.env`, `.env.example`, or `docker-compose.yml`?
-3. **Submodule** — does `specs/` already exist as a directory or submodule?
+3. **Specs submodule** — does `specs/` already exist as a directory or submodule?
 4. **CI** — does `.github/workflows/` already exist? Any contract test workflow present?
 5. **Existing CLAUDE.md** — already has project context written?
+6. **Monorepo signals** — does `nx.json`, `turbo.json`, `lerna.json`, `pnpm-workspace.yaml`, or
+   a `workspaces` key in `package.json` exist? Is there an `apps/` or `packages/` directory with
+   multiple sub-directories each containing their own `package.json`, `pom.xml`, etc.?
+   If yes, list the detected sub-apps (directory names).
 
 Report findings before asking anything:
 
@@ -45,8 +49,37 @@ Report findings before asking anything:
 > - Port: {detected port — or 'not found in config'}
 > - specs/ submodule: {exists / not present}
 > - GitHub Actions: {exists / not present}
+> {if monorepo signals}: - Looks like a monorepo — detected sub-apps: {list of dir names}
 >
 > I'll use these as defaults — just confirm or correct as we go."
+
+**If monorepo/multi-module signals were found**, ask immediately after the report:
+> "This looks like a module with submodules ({names}).
+> Should I configure them as submodules so each gets its own tasks and contracts? (yes / no)"
+
+If yes → collect submodule details in Step 2-B before the main questions.
+If no → proceed as a single module.
+
+---
+
+## Step 2-B — Submodule collection (only when confirmed)
+
+Submodules share the parent module's repo — they are not separate repos.
+Collect them one at a time. Pre-fill from what was detected and ask the user to confirm or correct:
+
+- "Submodule name? _(Must match a `name` under this module's `submodules` in the spec repo's `project.json`; default: `{detected-dir-name}`)_"
+- "Type? (backend / frontend / worker)"
+- "Stack? (detected: {stack-if-found} — or enter manually)"
+- "Port? _(each submodule has its own port — detected: {port-if-found})_"
+- "Path within this repo? (default: `{detected-path}`)"
+
+Confirm: "`{sub}` — {type} — {stack} — :{port} — {path}. Another submodule? (yes / no)"
+
+**Rules enforced here:**
+- Submodules have no `repo` field — they are in the same repo as the parent module
+- Port is collected per submodule; the parent module has no `port`
+
+After collecting all submodules, continue to Step 2 (Q4 port will be skipped automatically).
 
 ---
 
@@ -56,7 +89,7 @@ Ask one question per message. Wait for the answer before asking the next.
 Where research already gives a confident answer, present it as a default to confirm
 rather than asking from scratch.
 
-**Q1 — Module name**
+**Q1 — Module name** _(skip if Step 2-B was run)_
 > "What's the module name for this repo?
 > _(Must exactly match a `name` entry in the spec repo's `.forge/project.json`)_"
 
@@ -75,7 +108,7 @@ If `specs/` already exists:
 If not:
 > "What's the spec repo URL? (it will be added as a git submodule at `specs/`)"
 
-**Q4 — Port**
+**Q4 — Port** _(skip entirely if Step 2-B was run — port belongs to each submodule, not the module)_
 
 If port was detected in Step 1:
 > "I found port `{port}` in your config — is that the right local dev port? (yes / enter different port)"
@@ -129,9 +162,14 @@ Ready to initialize. Here's what I'll do:
   git submodule update --init --recursive
 
 .forge/module.json
-  module:         {module-name}
-  test_base_url:  http://localhost:{port}
-  contract_glob:  specs/contracts/{module-name}/*.yaml
+  {if single app}
+  module:        {module-name}
+  test_base_url: http://localhost:{port}
+  contract_glob: specs/contracts/{module-name}/*.yaml
+  {if submodules}
+  submodules:
+    {sub-name}  path:{path}  :{port}  contract: specs/contracts/{sub-name}/*.yaml
+    ...
 
 CLAUDE.md
   Module:       {module-name}
@@ -161,6 +199,8 @@ git submodule update --init --recursive
 ```
 
 Write `.forge/module.json`:
+
+**For a single-app module** (no sub-apps):
 ```json
 {
   "module": "{module-name}",
@@ -171,17 +211,42 @@ Write `.forge/module.json`:
 }
 ```
 
+**Module with submodules** — no top-level `port` or `test_base_url`; each submodule owns those.
+Submodules have no `repo` field — they are in the same repo as the parent module:
+```json
+{
+  "module": "{module-name}",
+  "spec_submodule_path": "specs",
+  "specmatic_version": "2.x",
+  "submodules": [
+    {
+      "name": "{sub-name}",
+      "path": "{relative-path}",
+      "test_base_url": "http://localhost:{port}",
+      "contract_glob": "specs/contracts/{sub-name}/*.yaml"
+    }
+  ]
+}
+```
+
 Write `CLAUDE.md`:
 ```markdown
 # {module-name}
 
 {description}
 
-**Stack:** {stack}
-**Port:** {port}
+_(Single app: show Stack + Port inline. Monorepo: replace with a table.)_
+
+**Stack:** {stack}  **Port:** {port}
+
+— or for a monorepo —
+
+| Module | Stack | Port | Path |
+|--------|-------|------|------|
+| {name} | {stack} | {port} | {path} |
 
 ## Forge Workflow
-1. `/forge-tasks`         — see all pending tasks for this module
+1. `/forge-tasks`         — see all pending tasks for this repo's module(s)
 2. `/forge-implement`     — implement a feature task by task
 3. `/forge-contract-test` — run Specmatic contract tests
 4. `/forge-done`          — confirm tasks done + generate commit message
@@ -237,4 +302,8 @@ Run `git status` and confirm:
 - Never overwrite existing files
 - All written files must be complete — no unfilled placeholders
 - `module` in module.json must exactly match the name in the spec repo's project.json
+- **Extract, don't re-ask**: if the user's answer contains information for upcoming fields
+  (e.g. "it's a NestJS app on port 3000 at apps/auth-ui"), extract and fill those fields
+  silently — only ask about what is genuinely missing. Never ask a question the user has
+  already answered, even indirectly.
 - If the user provides multiple answers in one message, accept them gracefully and move forward

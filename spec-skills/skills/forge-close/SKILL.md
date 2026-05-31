@@ -93,6 +93,7 @@ Feature progress: {feature-slug}
 **If all modules are complete:**
 Update `features/{slug}/tasks.md` header status to `Done`
 and `features/{slug}/spec.md` header status to `Done`.
+Update `features/CHANGELOG.md`: find the row for `{slug}` and set `Status` → `Done`.
 
 > "🎉 All modules done — feature `{slug}` is complete."
 

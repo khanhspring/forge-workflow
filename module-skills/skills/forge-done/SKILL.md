@@ -31,7 +31,10 @@ is handled separately by `/forge-close` in the spec repo.
 ## Step 1 — Read task list (read-only from submodule)
 
 Read `{spec_submodule_path}/features/{slug}/tasks.md`.
-Find the `### {module}` section. Extract all tasks with their checkbox state.
+
+- If `module.json` has no `submodules` key: find the `### {module}` section.
+- If `module.json` has `submodules[]`: find the `### {submodule.name}` section for each entry;
+  show them grouped by submodule name in Step 2.
 
 If `tasks.md` is missing:
 > "No tasks file found at `specs/features/{slug}/tasks.md`.
@@ -65,6 +68,7 @@ Wait for confirmation before continuing.
 
 ## Step 3 — Generate commit message
 
+**Module with no submodules:**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Commit message
@@ -73,15 +77,33 @@ feat({module}): implement {feature-slug}
 
 - TASK-1: {title}
 - TASK-2: {title}
-- TASK-3: {title}
 
 Spec:     specs/features/{slug}/spec.md
-Tasks:    specs/features/{slug}/tasks.md
 Contract: specs/contracts/{module}/{slug}.yaml
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 Then remind:
 > "Once committed and pushed, go to the spec repo and run:
-> `/forge-close {slug} {module}`
-> to mark your tasks as done and check if the feature is fully complete."
+> `/forge-close {slug} {module}`"
+
+**Module with submodules (tasks grouped by submodule):**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Commit message
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+feat(webapps): implement {feature-slug}
+
+[admin]
+- TASK-3: {title}
+[portal]
+- TASK-4: {title}
+
+Spec: specs/features/{slug}/spec.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Then remind — one `/forge-close` per submodule, using the **submodule name directly**
+(no parent prefix — same command you'd use if it were a standalone module):
+> "/forge-close {slug} admin
+> /forge-close {slug} portal"

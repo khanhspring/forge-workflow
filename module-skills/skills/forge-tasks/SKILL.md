@@ -22,7 +22,13 @@ Show all tasks assigned to this module across all features.
 
 ## Steps
 
-Scan `{spec_submodule_path}/features/*/tasks.md` → find `### {module}` sections → extract tasks
+Determine the set of task headings to look for:
+- `module.json` has no `submodules` → look for `### {module}` (one heading).
+- `module.json` has `submodules[]` → look for `### {submodule.name}` for each entry.
+  Submodule task headings use the submodule's own name — no parent prefix — so they are
+  identical to standalone module headings and can be promoted without touching tasks.md.
+
+Scan `{spec_submodule_path}/features/*/tasks.md` → find all matching headings → extract tasks
 with their checkbox state and the parent feature's `Status`.
 
 ```
@@ -40,6 +46,22 @@ Feature: user-profile  [Open]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 2 features  ·  4 remaining  ·  1 done
+```
+
+For a module with submodules, group tasks by submodule under each feature:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Tasks for: webapps  (submodules: admin · landing · portal)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Feature: user-registration  [Open]
+  [admin]
+  - [ ] TASK-3 [ui] Registration form
+  [portal]
+  - [ ] TASK-4 [ui] Registration confirmation page
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1 feature  ·  2 remaining  ·  0 done
 ```
 
 If no tasks reference this module across any feature:

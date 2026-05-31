@@ -28,7 +28,11 @@ and the user has explicitly confirmed it.
 - Feature slug from $ARGUMENTS, or ask: "Which feature do you want to generate a contract for?"
 - Read `features/{slug}/spec.md` — must exist, otherwise stop.
 - Read `features/{slug}/tasks.md` — must exist, otherwise say "Run `/forge-tasks {slug}` first."
-- Read `.forge/project.json` — get module names, ports, stacks.
+- Read `.forge/project.json` — build a flat list of **contract targets**:
+  - Module with no submodules → target name = `{module.name}`, contract path = `contracts/{module.name}/`
+  - Module with submodules → target name = each `{submodule.name}`, contract path = `contracts/{submodule.name}/`
+  - Submodules use their own name as the target — identical to a standalone module — so they can be
+    promoted to a separate repo later with no contract path changes.
 
 ---
 
@@ -206,6 +210,8 @@ Update the API Endpoints table in `features/{slug}/spec.md`:
 
 Also advance the spec status: change the `**Status:**` line in `features/{slug}/spec.md`
 from `Draft` to `Ready` (planning complete — ready for implementation).
+
+Update `features/CHANGELOG.md`: find the row for `{slug}` and set `Status` → `Ready`.
 
 ---
 

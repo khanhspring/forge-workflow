@@ -22,12 +22,20 @@ Generate the task breakdown for a feature and write it to a dedicated file.
   - If no → generate and write.
 
 ## Task breakdown rules
-- Group tasks by module using `### {module-name}` headings (use module names from `.forge/project.json`)
-- Each task gets a unique ID: `TASK-N` (sequential across all modules)
+
+Read `.forge/project.json` and build a flat list of **task targets** — the names used as `###` headings:
+- For a module with **no submodules** → the target is `{module.name}`
+- For a module **with submodules** → the targets are each `{submodule.name}` (the parent module name
+  is NOT used as a heading; submodules are treated exactly like standalone modules here)
+
+This means a submodule can later be promoted to its own repo with zero changes to `tasks.md`.
+
+- Group tasks by target using `### {target-name}` headings
+- Each task gets a unique ID: `TASK-N` (sequential across all targets)
 - Tag each task with type: `[api]` / `[feat]` / `[ui]` / `[test]` / `[infra]`
 - Write 1–3 acceptance criteria under each task
-- Order tasks within each module by dependency (what must be done first)
-- For frontend/consumer modules, reference the backend endpoint they integrate against
+- Order tasks within each target by dependency (what must be done first)
+- For frontend/consumer targets, reference the backend endpoint they integrate against
 
 ## Output file: `features/{slug}/tasks.md`
 
@@ -41,7 +49,7 @@ _(Status lifecycle: Open → Done, set by `/forge-close` when all modules finish
 
 ---
 
-### {module-name} ({type})
+### {target-name} ({type})
 
 - [ ] TASK-1 [api] {task title}
   - {acceptance criterion}
@@ -52,7 +60,7 @@ _(Status lifecycle: Open → Done, set by `/forge-close` when all modules finish
 
 ---
 
-### {module-name} ({type})
+### {target-name} ({type})
 
 - [ ] TASK-3 [ui] {task title}
   - {acceptance criterion}
@@ -67,10 +75,10 @@ Tasks: {feature-slug}
 - [ ] TASK-1 [api] POST /users/register
 - [ ] TASK-2 [feat] Password hashing
 
-### web-app (frontend)
+### admin (frontend)          ← submodule of webapps, but headed by its own name
 - [ ] TASK-3 [ui] Registration form component
 ══════════════════════════════════════════
-3 tasks across 2 modules
+3 tasks across 3 targets
 ```
 
 ## Gate

@@ -15,11 +15,15 @@ disable-model-invocation: true
 Run or analyze Specmatic contract tests for this module.
 
 ## Pre-check
-- Read `.forge/module.json` for `contract_glob` and `test_base_url`.
+- Read `.forge/module.json`.
   If missing, say "Run forge-init to set up this module repo first."
+- Determine scope:
+  - Has no `submodules` key → single module; use top-level `contract_glob` and `test_base_url`.
+  - Has `submodules[]` → module with submodules; show one command block per submodule.
 
-## If $ARGUMENTS is empty — Output the test command
+## If $ARGUMENTS is empty — Output the test command(s)
 
+**Single-module repo:**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Contract Tests: {module}
@@ -35,6 +39,24 @@ Contracts under test:
 {list files matching contract_glob}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+**Module with submodules (one block per submodule):**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Contract Tests: {submodule.name}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Make sure {submodule.name} is running at {submodule.test_base_url}, then run:
+
+  specmatic test \
+    --contract "{submodule.contract_glob}" \
+    --testBaseURL {submodule.test_base_url}
+
+Contracts under test:
+{list files matching submodule.contract_glob}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+_(Repeat for each entry in `submodules[]`.)_
 
 ## If $ARGUMENTS contains test output — Analyze failures
 
