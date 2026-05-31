@@ -1,6 +1,6 @@
 {
   "name": "@khanhspring/forge-module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Forge module repo skills for Claude Code — implement, contract-test, done, and more",
   "type": "module",
   "bin": {
@@ -8,11 +8,7 @@
   },
   "files": [
     "bin",
-    "forge-contract-test",
-    "forge-done",
-    "forge-implement",
-    "forge-init",
-    "forge-tasks"
+    "skills"
   ],
   "keywords": ["claude-code", "skills", "ai", "workflow", "microservices"],
   "license": "MIT"

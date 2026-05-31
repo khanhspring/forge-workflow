@@ -1,6 +1,6 @@
 {
   "name": "@khanhspring/forge-spec",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Forge spec repo skills for Claude Code — brainstorm, spec, tasks, contract, and more",
   "type": "module",
   "bin": {
@@ -8,14 +8,7 @@
   },
   "files": [
     "bin",
-    "forge-brainstorm",
-    "forge-close",
-    "forge-config",
-    "forge-contract",
-    "forge-init",
-    "forge-spec",
-    "forge-status",
-    "forge-tasks"
+    "skills"
   ],
   "keywords": ["claude-code", "skills", "ai", "workflow", "microservices"],
   "license": "MIT"
