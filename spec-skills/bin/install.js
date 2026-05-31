@@ -2,12 +2,11 @@
 
 import { cpSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
-import { homedir } from 'os';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-const SKILLS_DIR = join(homedir(), '.claude', 'skills');
+const SKILLS_DIR = join(process.cwd(), '.claude', 'skills');
 
 const SKILLS = [
   'forge-brainstorm',
@@ -25,9 +24,9 @@ console.log('Installing @forge-workflow/spec skills...\n');
 mkdirSync(SKILLS_DIR, { recursive: true });
 
 for (const skill of SKILLS) {
-  cpSync(join(ROOT, skill), join(SKILLS_DIR, skill), { recursive: true, force: true });
+  cpSync(join(ROOT, 'skills', skill), join(SKILLS_DIR, skill), { recursive: true, force: true });
   console.log(`  ✓ ${skill}`);
 }
 
-console.log(`\nInstalled to ${SKILLS_DIR}`);
+console.log(`\nInstalled to ${SKILLS_DIR} (project-local)`)
 console.log('Restart Claude Code, then run /forge-init in your spec repo.');
