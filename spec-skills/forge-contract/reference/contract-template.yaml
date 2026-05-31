@@ -1,0 +1,282 @@
+# Main contract skeleton — copy and fill in for {feature-slug}.
+# Placeholders in {curly braces} are substituted per feature/resource.
+# Schemas and the shared/ error + pagination objects live in separate files (see best-practices.md);
+# this main file holds only info + paths + $refs.
+
+openapi: "3.0.0"
+
+info:
+  title: "{Module Name} — {Feature Name}"
+  version: "1.0.0"
+  description: "Contract for {feature-slug}. Spec: ../../features/{slug}/spec.md"
+
+servers:
+  - url: http://localhost:{port}
+    description: Local development
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/v1/{resources}:
+    post:
+      summary: "Create a new {resource}"
+      operationId: "create{Resource}"
+      tags: ["{feature-slug}"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/create-{resource}-request.yaml"
+            examples:
+              valid:
+                value:
+                  {field}: "{example}"
+      responses:
+        "201":
+          description: "{Resource} created successfully"
+          headers:
+            Location:
+              description: "URL of the created resource"
+              schema:
+                type: string
+                example: "/api/v1/{resources}/123e4567-e89b-12d3-a456-426614174000"
+          content:
+            application/json:
+              schema:
+                $ref: "./schemas/{resource}-reference.yaml"
+              examples:
+                success:
+                  value:
+                    id: "123e4567-e89b-12d3-a456-426614174000"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    get:
+      summary: "List {resources}"
+      operationId: "list{Resources}"
+      tags: ["{feature-slug}"]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: sort
+          in: query
+          schema:
+            type: string
+            example: "createdAt"
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        "200":
+          description: "Paginated list of {resources}"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "./schemas/{resource}-summary.yaml"
+                  pagination:
+                    $ref: "./shared/pagination-meta.yaml"
+              examples:
+                success:
+                  value:
+                    data:
+                      - id: "123e4567-e89b-12d3-a456-426614174000"
+                        {field}: "{value}"
+                    pagination:
+                      page: 1
+                      size: 20
+                      total: 1
+                      totalPages: 1
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/{resources}/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      summary: "Get {resource} by ID"
+      operationId: "get{Resource}ById"
+      tags: ["{feature-slug}"]
+      responses:
+        "200":
+          description: "{Resource} found"
+          content:
+            application/json:
+              schema:
+                $ref: "./schemas/{resource}-response.yaml"
+              examples:
+                success:
+                  value:
+                    id: "123e4567-e89b-12d3-a456-426614174000"
+                    {field}: "{value}"
+                    createdAt: "2024-01-15T10:30:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    patch:
+      summary: "Update {resource}"
+      operationId: "update{Resource}"
+      tags: ["{feature-slug}"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/update-{resource}-request.yaml"
+            examples:
+              valid:
+                value:
+                  {field}: "{example}"
+      responses:
+        "204":
+          description: "Updated successfully"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      summary: "Delete {resource}"
+      operationId: "delete{Resource}"
+      tags: ["{feature-slug}"]
+      responses:
+        "204":
+          description: "Deleted successfully"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  responses:
+    BadRequest:
+      description: "Validation failed"
+      content:
+        application/json:
+          schema:
+            $ref: "./shared/api-error.yaml"
+          examples:
+            validationError:
+              value:
+                code: "VALIDATION_ERROR"
+                message: "Validation failed for 1 field(s)"
+                traceId: "123e4567-e89b-12d3-a456-426614174000"
+                details:
+                  - field: "email"
+                    code: "INVALID_FORMAT"
+                    message: "Must be a valid email address"
+    Unauthorized:
+      description: "Not authenticated"
+      content:
+        application/json:
+          schema:
+            $ref: "./shared/api-error.yaml"
+          examples:
+            unauthenticated:
+              value:
+                code: "UNAUTHENTICATED"
+                message: "Missing or invalid authentication token"
+                traceId: "123e4567-e89b-12d3-a456-426614174000"
+    Forbidden:
+      description: "Not authorized"
+      content:
+        application/json:
+          schema:
+            $ref: "./shared/api-error.yaml"
+          examples:
+            forbidden:
+              value:
+                code: "FORBIDDEN"
+                message: "You do not have permission to perform this action"
+                traceId: "123e4567-e89b-12d3-a456-426614174000"
+    NotFound:
+      description: "Resource not found"
+      content:
+        application/json:
+          schema:
+            $ref: "./shared/api-error.yaml"
+          examples:
+            notFound:
+              value:
+                code: "NOT_FOUND"
+                message: "{Resource} not found"
+                traceId: "123e4567-e89b-12d3-a456-426614174000"
+    Conflict:
+      description: "Resource already exists or state conflict"
+      content:
+        application/json:
+          schema:
+            $ref: "./shared/api-error.yaml"
+          examples:
+            conflict:
+              value:
+                code: "ALREADY_EXISTS"
+                message: "{Resource} already exists"
+                traceId: "123e4567-e89b-12d3-a456-426614174000"
+    InternalError:
+      description: "Unexpected server error"
+      content:
+        application/json:
+          schema:
+            $ref: "./shared/api-error.yaml"
+          examples:
+            internalError:
+              value:
+                code: "INTERNAL_ERROR"
+                message: "An unexpected error occurred"
+                traceId: "123e4567-e89b-12d3-a456-426614174000"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
