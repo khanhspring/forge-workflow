@@ -256,6 +256,8 @@ _(Single app: show Stack + Port inline. Monorepo: replace with a table.)_
 Linked via git submodule at `specs/`.
 Run `git submodule update --remote specs` before starting a new feature,
 and again after `/forge-close` is run in the spec repo to sync task status.
+Project-wide domain context (actors, glossary, principles) lives at `specs/CONTEXT.md`
+— read it before implementing.
 
 ## Principles
 {list each as a bullet — or "None defined yet."}

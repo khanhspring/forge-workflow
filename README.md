@@ -36,6 +36,15 @@ auth-server repo  (module)
 user-service repo  (module, no submodules)
 ```
 
+### Project context
+
+`/forge-init` interviews you about the project — actors, domain glossary, business goal,
+current state, principles — and writes the answers to `CONTEXT.md` in the spec repo root.
+This is the single source of truth for domain context: `/forge-brainstorm` and `/forge-spec`
+read it before planning, and module repos see it at `specs/CONTEXT.md` during
+`/forge-implement`. `CLAUDE.md` stays operational (modules, workflow) and just points to it.
+Update it any time with `/forge-config`.
+
 ### Config files
 
 **Spec repo — `.forge/project.json`**
@@ -144,14 +153,14 @@ git add .claude/skills/ && git commit -m "chore: add forge spec skills"
 
 | Skill | Purpose |
 |-------|---------|
-| `/forge-init` | One-time setup — writes `.forge/project.json`, `CLAUDE.md`, `features/CHANGELOG.md` |
+| `/forge-init` | One-time setup — clarifies project details, writes `.forge/project.json`, `CONTEXT.md`, `CLAUDE.md`, `features/CHANGELOG.md` |
 | `/forge-brainstorm [idea]` | Phase 1 — interrogate the idea (or extract from an existing doc), save `brainstorm.md` |
 | `/forge-spec [slug]` | Phase 2 — write `features/{slug}/spec.md` |
 | `/forge-tasks [slug]` | Phase 3 — write `features/{slug}/tasks.md`, grouped by module/submodule |
 | `/forge-contract [slug]` | Phase 4 — generate Specmatic OpenAPI contracts |
 | `/forge-close [slug] [module]` | Mark a module's tasks done after the module repo ships |
 | `/forge-status` | Ordered feature dashboard with dependency tracking |
-| `/forge-config` | View/edit modules, ports, stack, spec repo URL |
+| `/forge-config` | View/edit modules and submodules, ports, stack, spec repo URL, and `CONTEXT.md` sections |
 
 ### Module repo (`module-skills/`)
 
@@ -244,6 +253,10 @@ Feature Status — my-platform
 ```
 .forge/
   project.json          ← modules, submodules, spec repo URL
+
+CONTEXT.md              ← project-wide domain context: actors, glossary, principles,
+                          conventions — read by planning skills, and by module repos
+                          at specs/CONTEXT.md
 
 features/
   CHANGELOG.md          ← ordered feature list with status and dependencies

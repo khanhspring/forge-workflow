@@ -1,6 +1,6 @@
 {
   "name": "@khanhspring/forge-module",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Forge module repo skills for Claude Code — implement, contract-test, done, and more",
   "type": "module",
   "bin": {

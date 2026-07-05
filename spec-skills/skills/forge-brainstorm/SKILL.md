@@ -61,14 +61,15 @@ Before asking the user anything, research the existing codebase silently:
    Note any patterns, naming conventions, or prior decisions relevant to this idea.
 3. Scan `contracts/*/` — are there existing API contracts this feature will touch or extend?
    Note existing endpoint shapes, error formats, auth patterns.
-4. Read `CLAUDE.md` — note project principles, conventions, and forbidden patterns
-   that will constrain design choices.
+4. Read `CONTEXT.md` — note the actors, domain glossary, principles, conventions, and
+   forbidden patterns that will constrain design choices. Use glossary terms verbatim
+   in your questions and in the summary — never invent synonyms for existing domain terms.
 
 Report your findings before starting questions:
 
 > "Before we dive in, here's what I found in the codebase:
 > - [relevant existing feature or contract, or "No related features found"]
-> - [relevant principle from CLAUDE.md, or "No constraints found"]
+> - [relevant principle or constraint from CONTEXT.md, or "No constraints found"]
 >
 > I'll use this as context. Here's my understanding of the feature: {1–2 sentence restatement}
 > Is that right?"
@@ -210,7 +211,7 @@ apply the Research Handling pattern.
 ## Step 5 — Propose approaches
 
 Propose **2–3 design approaches** with trade-offs. Base them on the researched context
-from Step 1 — flag if an approach conflicts with existing patterns or CLAUDE.md principles.
+from Step 1 — flag if an approach conflicts with existing patterns or CONTEXT.md principles.
 
 ```
 I see 2–3 ways to approach this:

@@ -61,12 +61,15 @@ If `tasks.md` is missing → stop: "No tasks found. Run `/forge-tasks {slug}` in
 
 Then research the existing codebase — do this before asking any questions:
 
-1. **Read `CLAUDE.md`** — note architectural principles, conventions, and forbidden patterns.
-2. **Find similar existing endpoints** — look for controllers/routes with similar patterns to what the contract defines. Note how they're structured.
-3. **Find existing service/repository patterns** — how are services and data access layers organized in this codebase?
-4. **Find existing test patterns** — how are unit and integration tests structured? What test utilities exist?
-5. **Find existing error handling** — how does this service return errors? Does it match the `ApiError` schema (`shared/api-error.yaml`) in the contract — `code`, `message`, `traceId`, `details[]`?
-6. **Find existing auth/middleware** — how is authentication enforced on existing endpoints?
+1. **Read `{spec_submodule_path}/CONTEXT.md`** (if present) — project-wide domain context:
+   actors, domain glossary, principles, and forbidden patterns. Use glossary terms verbatim
+   when naming things — never invent synonyms for existing domain terms.
+2. **Read `CLAUDE.md`** — this repo's architectural principles, conventions, and forbidden patterns.
+3. **Find similar existing endpoints** — look for controllers/routes with similar patterns to what the contract defines. Note how they're structured.
+4. **Find existing service/repository patterns** — how are services and data access layers organized in this codebase?
+5. **Find existing test patterns** — how are unit and integration tests structured? What test utilities exist?
+6. **Find existing error handling** — how does this service return errors? Does it match the `ApiError` schema (`shared/api-error.yaml`) in the contract — `code`, `message`, `traceId`, `details[]`?
+7. **Find existing auth/middleware** — how is authentication enforced on existing endpoints?
 
 Report findings before asking questions:
 

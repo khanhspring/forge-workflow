@@ -1,6 +1,6 @@
 {
   "name": "@khanhspring/forge-spec",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Forge spec repo skills for Claude Code — brainstorm, spec, tasks, contract, and more",
   "type": "module",
   "bin": {

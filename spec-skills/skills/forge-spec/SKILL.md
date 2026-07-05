@@ -44,9 +44,10 @@ Before asking anything, research silently:
    - How Non-Functional requirements are typically written
    - Any related feature whose requirements this feature extends or depends on
 
-2. **CLAUDE.md** — note project principles and conventions.
+2. **CONTEXT.md** — note the actors, domain glossary, principles, and conventions.
    Any principle that implies a requirement for this feature?
    (e.g. "API contract before implementation" → this feature needs a contract requirement)
+   Use glossary terms verbatim in requirements — never invent synonyms for existing domain terms.
 
 3. **Brainstorm open items** — extract from the brainstorm summary:
    - Any item listed under **Open Questions** that wasn't resolved
@@ -58,7 +59,7 @@ Report findings:
 > "Before drafting, here's what I found:
 > - Related features: {list or 'none'}
 > - Unresolved from brainstorm: {open questions / assumptions — or 'none, all clear'}
-> - CLAUDE.md principles that apply: {list or 'none'}
+> - CONTEXT.md principles that apply: {list or 'none'}
 > - Naming convention: {e.g. 'REQ-N restarts per feature'}"
 
 ---
