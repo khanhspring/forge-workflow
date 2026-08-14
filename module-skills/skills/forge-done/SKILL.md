@@ -2,7 +2,7 @@
 name: "forge-done"
 description: "Confirms all tasks for this module are complete and generates the module repo commit message. Module repo only — run /forge-close in the spec repo afterward to mark tasks done there."
 argument-hint: "Feature slug (e.g. 'user-registration')"
-compatibility: "Requires module repo with .forge/module.json and an initialized specs/ git submodule"
+compatibility: "Requires module repo with .forge/module.json and an initialized specs/ link (git submodule or junction)"
 metadata:
   author: "forge-workflow"
   source: "module-skills/forge-done/SKILL.md"
@@ -28,7 +28,7 @@ is handled separately by `/forge-close` in the spec repo.
 
 ---
 
-## Step 1 — Read task list (read-only from submodule)
+## Step 1 — Read task list (read-only from specs/)
 
 Read `{spec_submodule_path}/features/{slug}/tasks.md`.
 
@@ -40,8 +40,8 @@ If `tasks.md` is missing:
 > "No tasks file found at `specs/features/{slug}/tasks.md`.
 > Run `/forge-tasks {slug}` in the spec repo first."
 
-Note: the submodule is read-only — task checkboxes cannot be updated from here.
-That is handled by `/forge-close` in the spec repo.
+Note: `specs/` is read-only from here regardless of link type — task checkboxes cannot be
+updated from this repo. That is handled by `/forge-close` in the spec repo.
 
 ---
 

@@ -125,6 +125,7 @@ Feature {feature-slug} fully implemented across all modules.
 ```
 
 Then remind:
-> "After committing and pushing, module repos should run:
+> "After committing and pushing, module repos linked via git submodule should run:
 > `git submodule update --remote specs`
-> to sync the updated task status."
+> to sync the updated task status. Repos linked via a local junction/symlink pick up
+> the change automatically — no action needed there."

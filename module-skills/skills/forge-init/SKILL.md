@@ -34,7 +34,9 @@ Before asking anything, silently scan the repo and note:
 
 1. **Stack detection** — does `pom.xml`, `build.gradle`, `package.json`, `go.mod`, `requirements.txt`, or similar exist? What versions are declared?
 2. **Port detection** — is a port configured in `application.yml`, `application.properties`, `.env`, `.env.example`, or `docker-compose.yml`?
-3. **Specs submodule** — does `specs/` already exist as a directory or submodule?
+3. **Specs link** — does `specs/` already exist? If so, determine how: a git submodule
+   (check `.gitmodules` / `git submodule status`) or a junction/symlink (check if it's a
+   reparse point / symlink, e.g. `git submodule status` reports nothing but the dir exists).
 4. **CI** — does `.github/workflows/` already exist? Any contract test workflow present?
 5. **Existing CLAUDE.md** — already has project context written?
 6. **Monorepo signals** — does `nx.json`, `turbo.json`, `lerna.json`, `pnpm-workspace.yaml`, or
@@ -47,7 +49,7 @@ Report findings before asking anything:
 > "Here's what I found in this repo:
 > - Stack: {detected stack — or 'not detected'}
 > - Port: {detected port — or 'not found in config'}
-> - specs/ submodule: {exists / not present}
+> - specs/: {not present / exists — git submodule / exists — junction or symlink}
 > - GitHub Actions: {exists / not present}
 > {if monorepo signals}: - Looks like a monorepo — detected sub-apps: {list of dir names}
 >
@@ -99,14 +101,30 @@ Do not suggest a default — module names must be exact matches. Warn clearly:
 **Q2 — Module description**
 > "What does this module do? (one sentence)"
 
-**Q3 — Spec repo URL**
+**Q3 — Spec repo link**
 
-If `specs/` already exists:
-> "I see a `specs/` directory already — is that the spec repo submodule? (yes/no)
-> If yes, what's the remote URL? (run `git remote -v` in `specs/` if unsure)"
+If `specs/` already exists, confirm what was detected in Step 1 instead of asking from scratch:
+- Detected as a git submodule → "I see `specs/` is already a git submodule — is that the spec
+  repo? (yes/no). If yes, what's the remote URL? (run `git remote -v` in `specs/` if unsure)"
+- Detected as a junction/symlink → "I see `specs/` is already a local junction/symlink — what
+  local path does it point at? (confirm or correct)"
+- Set `spec_link_type` accordingly and skip straight to Q4.
 
-If not:
-> "What's the spec repo URL? (it will be added as a git submodule at `specs/`)"
+If `specs/` does not exist, ask how to link it:
+> "How should this repo link to the spec repo?
+> 1. **Git submodule** (default) — versioned and works across machines/CI, but needs
+>    `git submodule update --remote specs` to sync after spec repo changes.
+> 2. **Junction / local link** — for when the spec repo and this module repo live on the same
+>    machine (solo/local dev). `specs/` always reflects the live folder, no sync command needed —
+>    but it won't survive being cloned elsewhere or used in CI, and skips version pinning."
+
+- **If git submodule (or no answer / "default")**:
+  > "What's the spec repo URL? (it will be added as a git submodule at `specs/`)"
+  Set `spec_link_type: "submodule"`.
+- **If junction/local link**:
+  > "What's the local path to the spec repo folder? (absolute path, e.g. `D:\Workspace\my-specs`
+  > or `/home/me/my-specs`)"
+  Set `spec_link_type: "junction"` and `spec_source_path` to the given absolute path.
 
 **Q4 — Port** _(skip entirely if Step 2-B was run — port belongs to each submodule, not the module)_
 
@@ -157,13 +175,19 @@ Show a full preview of everything that will be created or run:
 ```
 Ready to initialize. Here's what I'll do:
 
-{if specs/ not present}
+{if specs/ not present, spec_link_type = submodule}
   git submodule add {spec-repo-url} specs
   git submodule update --init --recursive
+
+{if specs/ not present, spec_link_type = junction}
+  {Windows}  mklink /J specs "{spec-source-path}"
+  {macOS/Linux}  ln -s "{spec-source-path}" specs
+  append `specs/` to .gitignore  (junction contents aren't tracked by this repo)
 
 .forge/module.json
   {if single app}
   module:        {module-name}
+  spec_link_type: {submodule | junction}
   test_base_url: http://localhost:{port}
   contract_glob: specs/contracts/{module-name}/*.yaml
   {if submodules}
@@ -192,11 +216,23 @@ Wait for confirmation. Do not write files or run git commands before the user sa
 
 ## Step 4 — Write files
 
-Run (if specs/ not already present):
+Run (if specs/ not already present), based on the chosen `spec_link_type`:
+
+**`submodule`:**
 ```bash
 git submodule add {spec-repo-url} specs
 git submodule update --init --recursive
 ```
+
+**`junction`:**
+```bash
+# Windows
+mklink /J specs "{spec-source-path}"
+# macOS/Linux
+ln -s "{spec-source-path}" specs
+```
+Then append `specs/` to `.gitignore` — a junction/symlink's contents belong to the spec repo,
+not this one, and must not be tracked or committed here.
 
 Write `.forge/module.json`:
 
@@ -205,11 +241,14 @@ Write `.forge/module.json`:
 {
   "module": "{module-name}",
   "spec_submodule_path": "specs",
+  "spec_link_type": "submodule",
   "specmatic_version": "2.x",
   "test_base_url": "http://localhost:{port}",
   "contract_glob": "specs/contracts/{module-name}/*.yaml"
 }
 ```
+`spec_link_type` is `"submodule"` (default) or `"junction"`. When `"junction"`, also write
+`"spec_source_path": "{absolute-local-path}"` so the link can be recreated if it's ever lost.
 
 **Module with submodules** — no top-level `port` or `test_base_url`; each submodule owns those.
 Submodules have no `repo` field — they are in the same repo as the parent module:
@@ -217,6 +256,7 @@ Submodules have no `repo` field — they are in the same repo as the parent modu
 {
   "module": "{module-name}",
   "spec_submodule_path": "specs",
+  "spec_link_type": "submodule",
   "specmatic_version": "2.x",
   "submodules": [
     {
@@ -253,9 +293,15 @@ _(Single app: show Stack + Port inline. Monorepo: replace with a table.)_
 5. (then in the spec repo) `/forge-close {slug} {module}` — mark tasks done there
 
 ## Spec repo
-Linked via git submodule at `specs/`.
+_(submodule)_ Linked via git submodule at `specs/`.
 Run `git submodule update --remote specs` before starting a new feature,
 and again after `/forge-close` is run in the spec repo to sync task status.
+
+_(junction)_ Linked via local junction/symlink at `specs/` → `{spec-source-path}`.
+Always reflects the live spec repo folder — no sync command needed. This only works while
+both repos are on the same machine; switch to a git submodule (`/forge-init` again, or
+re-run link setup) before cloning this repo elsewhere or using it in CI.
+
 Project-wide domain context (actors, glossary, principles) lives at `specs/CONTEXT.md`
 — read it before implementing.
 

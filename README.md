@@ -89,6 +89,7 @@ Single module:
 {
   "module": "user-service",
   "spec_submodule_path": "specs",
+  "spec_link_type": "submodule",
   "specmatic_version": "2.x",
   "test_base_url": "http://localhost:8080",
   "contract_glob": "specs/contracts/user-service/*.yaml"
@@ -100,6 +101,7 @@ Module with submodules:
 {
   "module": "webapps",
   "spec_submodule_path": "specs",
+  "spec_link_type": "submodule",
   "specmatic_version": "2.x",
   "submodules": [
     { "name": "admin",   "path": "apps/admin",   "test_base_url": "http://localhost:3001", "contract_glob": "specs/contracts/admin/*.yaml" },
@@ -108,6 +110,24 @@ Module with submodules:
   ]
 }
 ```
+
+### Spec repo link: submodule vs. junction
+
+`/forge-init` in a module repo asks how to connect `specs/` to the spec repo:
+
+- **Git submodule** (default) — `specs/` is pinned to a commit of the spec repo, synced
+  across machines/CI, and updated with `git submodule update --remote specs`. Use this once
+  more than one person/machine is involved.
+- **Junction / local link** — for solo, single-machine setups where you don't want to push or
+  pull the spec repo at all. `specs/` is a local junction (Windows: `mklink /J`) or symlink
+  (macOS/Linux: `ln -s`) pointing straight at your spec repo folder on disk. Any edit in the
+  spec repo shows up in every module repo instantly, with no sync command — but it only works
+  while everything stays on one machine, and skips the version pinning a submodule gives you.
+
+`.forge/module.json` records the choice as `spec_link_type: "submodule" | "junction"`
+(plus `spec_source_path` for junctions). Skills that read `specs/` — `/forge-tasks`,
+`/forge-implement`, `/forge-done` — branch their sync-status checks on this field.
+Junction-linked `specs/` is added to `.gitignore`, since its contents belong to the spec repo.
 
 ---
 
@@ -184,7 +204,8 @@ SPEC REPO
   /forge-tasks       →  features/{slug}/tasks.md
   /forge-contract    →  contracts/{module}/{slug}.yaml   (Status: Ready)
         │
-        │  git push  →  module repos: git submodule update --remote specs
+        │  submodule-linked: git push → module repos run git submodule update --remote specs
+        │  junction-linked:  nothing to do — specs/ already reflects this folder
         ▼
 MODULE REPO
   /forge-init                      (once)
@@ -197,7 +218,8 @@ SPEC REPO
   /forge-close {slug} {module}     tick tasks; when all done → Status: Done, CHANGELOG updated
         │
         ▼
-  module repos: git submodule update --remote specs   (sync task status)
+  submodule-linked module repos: git submodule update --remote specs   (sync task status)
+  junction-linked module repos: nothing to do
 ```
 
 Each phase has a confirmation gate — nothing is written until you approve it.
@@ -307,5 +329,6 @@ about genuine gaps, then runs its challenge and approach steps before writing `b
 - **Never skip phases.** brainstorm → spec → tasks → contract, in order.
 - **Names must match exactly.** `module.name` in `project.json` must match `module` in `module.json`. Submodule names must be unique across the whole project.
 - **Submodules share their parent's repo.** No `repo` field on submodules; no `port` on the parent.
-- **Run `git submodule update --remote specs`** before starting a feature, and after `/forge-close`.
+- **If `specs/` is submodule-linked**, run `git submodule update --remote specs` before starting
+  a feature, and after `/forge-close`. Junction-linked `specs/` needs no such step.
 - **Check `Depends on` in CHANGELOG.md** before starting a feature — don't begin work on a feature whose dependency isn't Done yet.

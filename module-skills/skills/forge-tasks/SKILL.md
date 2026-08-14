@@ -2,7 +2,7 @@
 name: "forge-tasks"
 description: "Lists all tasks assigned to this module across every feature, with completion status, by scanning the spec submodule. Module repo task dashboard."
 argument-hint: ""
-compatibility: "Requires module repo with .forge/module.json and an initialized specs/ git submodule"
+compatibility: "Requires module repo with .forge/module.json and an initialized specs/ link (git submodule or junction)"
 metadata:
   author: "forge-workflow"
   source: "module-skills/forge-tasks/SKILL.md"
@@ -15,10 +15,15 @@ disable-model-invocation: true
 Show all tasks assigned to this module across all features.
 
 ## Pre-check
-- Read `.forge/module.json` for `module` and `spec_submodule_path`.
+- Read `.forge/module.json` for `module`, `spec_submodule_path`, and `spec_link_type`.
   If missing: "Run `/forge-init` to set up this module repo first."
-- If `specs/` is not initialized: suggest `git submodule update --init --recursive`
-- Optionally suggest `git submodule update --remote specs` to get the latest task status.
+- If `spec_link_type` is `"submodule"` (or unset, for repos initialized before this field existed):
+  - If `specs/` is not initialized: suggest `git submodule update --init --recursive`
+  - Optionally suggest `git submodule update --remote specs` to get the latest task status.
+- If `spec_link_type` is `"junction"`:
+  - If `specs/` is missing or broken, suggest recreating the link at `spec_source_path`
+    (Windows: `mklink /J specs "{spec_source_path}"`; macOS/Linux: `ln -s "{spec_source_path}" specs`).
+  - No sync command needed — a junction/symlink always reflects the live folder.
 
 ## Steps
 
@@ -65,7 +70,8 @@ Feature: user-registration  [Open]
 ```
 
 If no tasks reference this module across any feature:
-> "No tasks found for `{module}`. Either no feature targets this module yet, or the specs
-> submodule is out of date — try `git submodule update --remote specs`."
+> "No tasks found for `{module}`. Either no feature targets this module yet, {if submodule}
+> or the specs submodule is out of date — try `git submodule update --remote specs`.
+> {if junction} or the linked spec folder doesn't have it yet."
 
 After showing: "Tell me which feature to implement, or run `/forge-implement {slug}`."

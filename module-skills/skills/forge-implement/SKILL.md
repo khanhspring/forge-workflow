@@ -2,7 +2,7 @@
 name: "forge-implement"
 description: "Researches existing codebase patterns, clears ambiguities one at a time, challenges implementation concerns, then guides task-by-task implementation scoped to this module. No code written until plan is confirmed."
 argument-hint: "Feature slug (e.g. 'user-registration')"
-compatibility: "Requires module repo with .forge/module.json and an initialized specs/ git submodule"
+compatibility: "Requires module repo with .forge/module.json and an initialized specs/ link (git submodule or junction)"
 metadata:
   author: "forge-workflow"
   source: "module-skills/forge-implement/SKILL.md"
@@ -25,7 +25,7 @@ presented the Implementation Plan and the user has explicitly confirmed it.
 ## Pre-check
 
 - Read `.forge/module.json` — if missing, say "Run `/forge-init` to set up this module repo first."
-- Get `spec_submodule_path` from module.json.
+- Get `spec_submodule_path` and `spec_link_type` from module.json.
 - **Determine working scope:**
   - `module.json` has no `submodules` → scope = the module itself; use top-level `test_base_url` and `contract_glob`.
   - `module.json` has `submodules[]` → ask "Which submodule are you implementing? ({list submodule names})"
@@ -34,8 +34,9 @@ presented the Implementation Plan and the user has explicitly confirmed it.
   - If empty, scan `{spec_submodule_path}/features/*/tasks.md` for `### {scope-name}` headings
     (module name for simple modules, submodule name for submodules), list features with pending
     tasks, ask which to implement.
-- Check `git submodule status` — if specs/ is out of date, say:
+- If `spec_link_type` is `"submodule"` (or unset), check `git submodule status` — if specs/ is out of date, say:
   > "Your specs submodule may be out of date. Run `git submodule update --remote specs` first, or continue with the current version?"
+- If `spec_link_type` is `"junction"`, skip this check — a junction/symlink always reflects the live spec folder.
 
 ---
 
