@@ -32,9 +32,11 @@ is handled separately by `/forge-close` in the spec repo.
 
 Read `{spec_submodule_path}/features/{slug}/tasks.md`.
 
-- If `module.json` has no `submodules` key: find the `### {module}` section.
-- If `module.json` has `submodules[]`: find the `### {submodule.name}` section for each entry;
-  show them grouped by submodule name in Step 2.
+Read `{spec_submodule_path}/.forge/project.json` and find the `modules[]` entry where
+`name == module` — submodule structure lives there, not in module.json:
+- Entry has no `submodules[]`: find the `### {module}` section.
+- Entry has `submodules[]`: find the `### {submodule.name}` section for each entry; show them
+  grouped by submodule name in Step 2.
 
 If `tasks.md` is missing:
 > "No tasks file found at `specs/features/{slug}/tasks.md`.

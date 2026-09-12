@@ -84,30 +84,26 @@ Submodules have no `repo` field — they share the parent's.
 
 **Module repo — `.forge/module.json`**
 
-Single module:
+Identity and spec-link info only — the same shape whether or not the module has submodules.
+Port, stack, and submodule structure are never duplicated here; they live solely in the spec
+repo's `project.json`, and module skills (`/forge-tasks`, `/forge-implement`, `/forge-done`,
+`/forge-contract-test`) resolve them at runtime by reading `specs/.forge/project.json`:
+
 ```json
 {
   "module": "user-service",
   "spec_submodule_path": "specs",
-  "spec_link_type": "submodule",
-  "specmatic_version": "2.x",
-  "test_base_url": "http://localhost:8080",
-  "contract_glob": "specs/contracts/user-service/*.yaml"
+  "spec_link_type": "submodule"
 }
 ```
 
-Module with submodules:
+Junction-linked repos add one more field:
 ```json
 {
   "module": "webapps",
   "spec_submodule_path": "specs",
-  "spec_link_type": "submodule",
-  "specmatic_version": "2.x",
-  "submodules": [
-    { "name": "admin",   "path": "apps/admin",   "test_base_url": "http://localhost:3001", "contract_glob": "specs/contracts/admin/*.yaml" },
-    { "name": "landing", "path": "apps/landing",  "test_base_url": "http://localhost:3000", "contract_glob": "specs/contracts/landing/*.yaml" },
-    { "name": "portal",  "path": "apps/portal",   "test_base_url": "http://localhost:3002", "contract_glob": "specs/contracts/portal/*.yaml" }
-  ]
+  "spec_link_type": "junction",
+  "spec_source_path": "/home/me/my-specs"
 }
 ```
 
@@ -128,6 +124,11 @@ Module with submodules:
 (plus `spec_source_path` for junctions). Skills that read `specs/` — `/forge-tasks`,
 `/forge-implement`, `/forge-done` — branch their sync-status checks on this field.
 Junction-linked `specs/` is added to `.gitignore`, since its contents belong to the spec repo.
+
+Port, stack, and submodule structure are resolved the same way regardless of link type: read
+`specs/.forge/project.json`, find the `modules[]` entry matching this repo's `module` name,
+and use its `port`/`stack`/`submodules[]` directly. Nothing about a module's shape is ever
+re-entered or re-stored in the module repo.
 
 ---
 
@@ -329,6 +330,9 @@ about genuine gaps, then runs its challenge and approach steps before writing `b
 - **Never skip phases.** brainstorm → spec → tasks → contract, in order.
 - **Names must match exactly.** `module.name` in `project.json` must match `module` in `module.json`. Submodule names must be unique across the whole project.
 - **Submodules share their parent's repo.** No `repo` field on submodules; no `port` on the parent.
+- **`.forge/module.json` holds identity + spec-link info only.** Never port, stack, or
+  submodule structure — that always lives in the spec repo's `project.json`, resolved at
+  runtime from `specs/.forge/project.json`.
 - **If `specs/` is submodule-linked**, run `git submodule update --remote specs` before starting
   a feature, and after `/forge-close`. Junction-linked `specs/` needs no such step.
 - **Check `Depends on` in CHANGELOG.md** before starting a feature — don't begin work on a feature whose dependency isn't Done yet.

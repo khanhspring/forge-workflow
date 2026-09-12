@@ -15,11 +15,17 @@ disable-model-invocation: true
 Run or analyze Specmatic contract tests for this module.
 
 ## Pre-check
-- Read `.forge/module.json`.
+- Read `.forge/module.json` for `module` and `spec_submodule_path`.
   If missing, say "Run forge-init to set up this module repo first."
+- Read `{spec_submodule_path}/.forge/project.json` and find the `modules[]` entry where
+  `name == module` — port and submodule structure live there, not in module.json.
 - Determine scope:
-  - Has no `submodules` key → single module; use top-level `contract_glob` and `test_base_url`.
-  - Has `submodules[]` → module with submodules; show one command block per submodule.
+  - Entry has no `submodules[]` → single module; derive `contract_glob =
+    {spec_submodule_path}/contracts/{module}/*.yaml` and `test_base_url =
+    http://localhost:{entry.port}`.
+  - Entry has `submodules[]` → module with submodules; show one command block per submodule,
+    deriving each one's `contract_glob = {spec_submodule_path}/contracts/{submodule.name}/*.yaml`
+    and `test_base_url = http://localhost:{submodule.port}`.
 
 ## If $ARGUMENTS is empty — Output the test command(s)
 

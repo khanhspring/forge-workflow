@@ -25,11 +25,17 @@ presented the Implementation Plan and the user has explicitly confirmed it.
 ## Pre-check
 
 - Read `.forge/module.json` — if missing, say "Run `/forge-init` to set up this module repo first."
-- Get `spec_submodule_path` and `spec_link_type` from module.json.
-- **Determine working scope:**
-  - `module.json` has no `submodules` → scope = the module itself; use top-level `test_base_url` and `contract_glob`.
-  - `module.json` has `submodules[]` → ask "Which submodule are you implementing? ({list submodule names})"
-    then use that submodule's `path`, `test_base_url`, and `contract_glob`.
+- Get `module`, `spec_submodule_path`, and `spec_link_type` from module.json.
+- **Determine working scope** from the spec repo, not module.json:
+  - Read `{spec_submodule_path}/.forge/project.json` and find the `modules[]` entry where
+    `name == module`. If not found, warn: "`{module}` isn't registered in the spec repo's
+    `project.json` — check the name matches, or add it there via `/forge-config`."
+  - Entry has no `submodules[]` → scope = the module itself; `test_base_url =
+    http://localhost:{entry.port}`, `contract_glob = {spec_submodule_path}/contracts/{module}/*.yaml`.
+  - Entry has `submodules[]` → ask "Which submodule are you implementing? ({list submodule names
+    from the entry})", then use that submodule's `path`, and derive `test_base_url =
+    http://localhost:{submodule.port}`, `contract_glob =
+    {spec_submodule_path}/contracts/{submodule.name}/*.yaml`.
 - Feature slug from $ARGUMENTS.
   - If empty, scan `{spec_submodule_path}/features/*/tasks.md` for `### {scope-name}` headings
     (module name for simple modules, submodule name for submodules), list features with pending

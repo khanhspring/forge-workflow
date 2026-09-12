@@ -27,9 +27,11 @@ Show all tasks assigned to this module across all features.
 
 ## Steps
 
-Determine the set of task headings to look for:
-- `module.json` has no `submodules` → look for `### {module}` (one heading).
-- `module.json` has `submodules[]` → look for `### {submodule.name}` for each entry.
+Determine the set of task headings to look for. Read `{spec_submodule_path}/.forge/project.json`
+and find the `modules[]` entry where `name == module` (from module.json) — submodule structure
+is never stored in module.json itself:
+- Entry has no `submodules[]` → look for `### {module}` (one heading).
+- Entry has `submodules[]` → look for `### {submodule.name}` for each entry.
   Submodule task headings use the submodule's own name — no parent prefix — so they are
   identical to standalone module headings and can be promoted without touching tasks.md.
 

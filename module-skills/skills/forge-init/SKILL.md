@@ -55,33 +55,14 @@ Report findings before asking anything:
 >
 > I'll use these as defaults — just confirm or correct as we go."
 
-**If monorepo/multi-module signals were found**, ask immediately after the report:
-> "This looks like a module with submodules ({names}).
-> Should I configure them as submodules so each gets its own tasks and contracts? (yes / no)"
+**If monorepo/multi-module signals were found**, note it in passing — no question needed:
+> "This looks like a module with submodules ({names}). Submodule structure (ports, stack,
+> paths) lives in the spec repo's `project.json`, not here — I'll cross-check against that
+> once `specs/` is linked."
 
-If yes → collect submodule details in Step 2-B before the main questions.
-If no → proceed as a single module.
-
----
-
-## Step 2-B — Submodule collection (only when confirmed)
-
-Submodules share the parent module's repo — they are not separate repos.
-Collect them one at a time. Pre-fill from what was detected and ask the user to confirm or correct:
-
-- "Submodule name? _(Must match a `name` under this module's `submodules` in the spec repo's `project.json`; default: `{detected-dir-name}`)_"
-- "Type? (backend / frontend / worker)"
-- "Stack? (detected: {stack-if-found} — or enter manually)"
-- "Port? _(each submodule has its own port — detected: {port-if-found})_"
-- "Path within this repo? (default: `{detected-path}`)"
-
-Confirm: "`{sub}` — {type} — {stack} — :{port} — {path}. Another submodule? (yes / no)"
-
-**Rules enforced here:**
-- Submodules have no `repo` field — they are in the same repo as the parent module
-- Port is collected per submodule; the parent module has no `port`
-
-After collecting all submodules, continue to Step 2 (Q4 port will be skipped automatically).
+Submodule structure is never collected or stored in this repo's `.forge/module.json`. It's
+configured once in the spec repo via `/forge-config` there, and every module skill reads it
+from `specs/.forge/project.json` at runtime. This repo only needs to know its own module name.
 
 ---
 
@@ -91,12 +72,21 @@ Ask one question per message. Wait for the answer before asking the next.
 Where research already gives a confident answer, present it as a default to confirm
 rather than asking from scratch.
 
-**Q1 — Module name** _(skip if Step 2-B was run)_
+**Q1 — Module name**
 > "What's the module name for this repo?
 > _(Must exactly match a `name` entry in the spec repo's `.forge/project.json`)_"
 
 Do not suggest a default — module names must be exact matches. Warn clearly:
 > "This name must match exactly. A mismatch will break `/forge-implement` and `/forge-done`."
+
+If `specs/` was already detected in Step 1 (already linked), read
+`{specs-path}/.forge/project.json` now and find the `modules[]` entry where `name` matches
+this answer. If found, silently keep its `port`, `stack`, `type`, and `submodules[]` (if any)
+for use in the Step 3 preview and the CLAUDE.md content written in Step 4 — do not re-ask for
+any of it. If not found, note it and continue: "Heads up — `{module}` isn't in the spec repo's
+`project.json` yet. Add it there with `/forge-config`, or continue and I'll leave stack/port
+as TBD in CLAUDE.md for now." If `specs/` isn't linked yet, this lookup happens later, in
+Step 4, right after the link is created.
 
 **Q2 — Module description**
 > "What does this module do? (one sentence)"
@@ -126,38 +116,26 @@ If `specs/` does not exist, ask how to link it:
   > or `/home/me/my-specs`)"
   Set `spec_link_type: "junction"` and `spec_source_path` to the given absolute path.
 
-**Q4 — Port** _(skip entirely if Step 2-B was run — port belongs to each submodule, not the module)_
+Note: port, stack, and submodule structure are never asked here — they come from the spec
+repo's `project.json` (looked up in Q1 if `specs/` already existed, or in Step 4 right after
+linking otherwise). `.forge/module.json` doesn't store any of it either way.
 
-If port was detected in Step 1:
-> "I found port `{port}` in your config — is that the right local dev port? (yes / enter different port)"
-
-If not detected:
-> "What port does this module run on locally?"
-
-**Q5 — Tech stack**
-
-If stack was detected in Step 1:
-> "Looks like this is a `{detected stack}` module — is that right? Anything to add?"
-
-If not detected:
-> "What's the tech stack? (e.g. 'Spring Boot 3, Java 21' or 'React, TypeScript')"
-
-**Q6 — Principles**
+**Q4 — Principles**
 > "What are the key architectural principles for this module?
 > _(e.g. 'stateless', 'no business logic in controllers', 'repository pattern for DB access')
 > Say 'none yet' to skip._"
 
-**Q7 — Conventions**
+**Q5 — Conventions**
 > "Any coding conventions the team follows in this repo?
 > _(e.g. 'constructor injection only', 'all public methods must have unit tests', 'no magic strings')
 > Say 'none yet' to skip._"
 
-**Q8 — Never**
+**Q6 — Never**
 > "Anything developers should never do in this codebase?
 > _(e.g. 'no direct DB calls from the API layer', 'never change a contract to fix a failing test')
 > Say 'none yet' to skip._"
 
-**Q9 — GitHub Actions CI**
+**Q7 — GitHub Actions CI**
 
 If `.github/workflows/` already exists with a contract test:
 > "I see a CI workflow already exists — skip adding another? (yes to skip)"
@@ -185,20 +163,15 @@ Ready to initialize. Here's what I'll do:
   append `specs/` to .gitignore  (junction contents aren't tracked by this repo)
 
 .forge/module.json
-  {if single app}
-  module:        {module-name}
-  spec_link_type: {submodule | junction}
-  test_base_url: http://localhost:{port}
-  contract_glob: specs/contracts/{module-name}/*.yaml
-  {if submodules}
-  submodules:
-    {sub-name}  path:{path}  :{port}  contract: specs/contracts/{sub-name}/*.yaml
-    ...
+  module:              {module-name}
+  spec_submodule_path: specs
+  spec_link_type:      {submodule | junction}
+  {if junction} spec_source_path: {spec-source-path}
 
 CLAUDE.md
   Module:       {module-name}
   Description:  {description}
-  Stack:        {stack}  Port: {port}
+  Stack/Port:   {from spec repo's project.json, or "TBD — set via /forge-config in the spec repo"}
   Principles:   {list or "none yet"}
   Conventions:  {list or "none yet"}
   Never:        {list or "none yet"}
@@ -234,48 +207,33 @@ ln -s "{spec-source-path}" specs
 Then append `specs/` to `.gitignore` — a junction/symlink's contents belong to the spec repo,
 not this one, and must not be tracked or committed here.
 
-Write `.forge/module.json`:
+If the Q1 lookup didn't already happen (i.e. `specs/` was just created above, not already
+present in Step 1), read `{spec_submodule_path}/.forge/project.json` now and find the
+`modules[]` entry where `name` matches the module name from Q1. Use its `port`, `stack`, and
+`submodules[]` (if any) to fill the CLAUDE.md content below. If the module still isn't found
+there, write "TBD — set via `/forge-config` in the spec repo" for the stack/port line instead.
 
-**For a single-app module** (no sub-apps):
+Write `.forge/module.json` — same shape whether or not the module has submodules in the spec
+repo, since submodule structure is never duplicated here:
 ```json
 {
   "module": "{module-name}",
   "spec_submodule_path": "specs",
-  "spec_link_type": "submodule",
-  "specmatic_version": "2.x",
-  "test_base_url": "http://localhost:{port}",
-  "contract_glob": "specs/contracts/{module-name}/*.yaml"
+  "spec_link_type": "submodule"
 }
 ```
 `spec_link_type` is `"submodule"` (default) or `"junction"`. When `"junction"`, also write
 `"spec_source_path": "{absolute-local-path}"` so the link can be recreated if it's ever lost.
 
-**Module with submodules** — no top-level `port` or `test_base_url`; each submodule owns those.
-Submodules have no `repo` field — they are in the same repo as the parent module:
-```json
-{
-  "module": "{module-name}",
-  "spec_submodule_path": "specs",
-  "spec_link_type": "submodule",
-  "specmatic_version": "2.x",
-  "submodules": [
-    {
-      "name": "{sub-name}",
-      "path": "{relative-path}",
-      "test_base_url": "http://localhost:{port}",
-      "contract_glob": "specs/contracts/{sub-name}/*.yaml"
-    }
-  ]
-}
-```
-
-Write `CLAUDE.md`:
+Write `CLAUDE.md`. `{stack}`/`{port}`/`{path}` below come from the spec repo's `project.json`
+lookup above (or "TBD" if not found there yet) — never from a question asked in this skill:
 ```markdown
 # {module-name}
 
 {description}
 
-_(Single app: show Stack + Port inline. Monorepo: replace with a table.)_
+_(Single app: show Stack + Port inline. Monorepo: replace with a table, one row per submodule
+found in the spec repo's project.json.)_
 
 **Stack:** {stack}  **Port:** {port}
 
@@ -350,6 +308,9 @@ Run `git status` and confirm:
 - Never overwrite existing files
 - All written files must be complete — no unfilled placeholders
 - `module` in module.json must exactly match the name in the spec repo's project.json
+- `module.json` never stores `port`, `stack`, or submodule structure — those live only in the
+  spec repo's `project.json`; every module skill resolves them at runtime by reading
+  `specs/.forge/project.json`
 - **Extract, don't re-ask**: if the user's answer contains information for upcoming fields
   (e.g. "it's a NestJS app on port 3000 at apps/auth-ui"), extract and fill those fields
   silently — only ask about what is genuinely missing. Never ask a question the user has

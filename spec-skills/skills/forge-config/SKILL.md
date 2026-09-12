@@ -149,10 +149,16 @@ Wait for confirmation. Do not write before the user says yes.
 Apply the change, preserving all other fields, sections, and formatting.
 Confirm: "Updated `{file}` — {summary of what changed}."
 
-If a module or submodule name changed, warn:
-> "Heads up: `{name}` is referenced by the module repo's `.forge/module.json`, by
-> `### {name}` headings in tasks.md, and by the `contracts/{name}/` folder. Update
-> those to match, or `/forge-implement` and `/forge-close` will break."
+If a **module** name changed, warn:
+> "Heads up: `{name}` is referenced by the module repo's `.forge/module.json` (`module`
+> field), by `### {name}` headings in tasks.md, and by the `contracts/{name}/` folder.
+> Update those to match, or `/forge-implement` and `/forge-close` will break."
+
+If a **submodule** name changed, warn (module.json is unaffected — it never stores submodule
+names):
+> "Heads up: `{name}` is referenced by `### {name}` headings in tasks.md and by the
+> `contracts/{name}/` folder. Update those to match, or `/forge-implement` and
+> `/forge-close` will break."
 
 ## Schema Reference
 
@@ -199,8 +205,9 @@ If a module or submodule name changed, warn:
 - Never write before the user confirms the preview in Step 4
 - `module.name` must be kebab-case and unique; submodule names must be unique across
   the whole project (contracts and task headings use the submodule name directly)
-- `module.name` must match the `module` field in the module repo's `.forge/module.json`;
-  submodule names must match the `submodules[].name` entries there
+- `module.name` must match the `module` field in the module repo's `.forge/module.json`.
+  `module.json` never stores submodule names or structure — module skills read those from
+  `project.json` directly at runtime, so a submodule rename here needs no module-repo change
 - A module has EITHER `port`+`stack` OR `submodules[]` — never both; submodules never
   have a `repo` field
 - Never silently remove a module or submodule that has tasks referencing it — warn first
